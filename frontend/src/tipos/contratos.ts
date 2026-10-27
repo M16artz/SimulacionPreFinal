@@ -1,0 +1,11 @@
+export type Distribucion = {tipo:'fija';valor:number} | {tipo:'uniforme';minimo:number;maximo:number} | {tipo:'triangular';minimo:number;moda:number;maximo:number} | {tipo:'exponencial';media:number};
+export type Actividad = 'pedido'|'preparacion'|'entrega'|'consumo'|'cobro'|'paciencia';
+export type Configuracion = {version_esquema:'1.0';nombre:string;sintetica:boolean;notas:string;mesas:number;capacidad_mesa:number;meseros:number;cocineras:number;apertura:number;cierre:number;llegadas:{inicio:number;fin:number;tasa:number}[];probabilidades_grupo:number[];tiempos:Record<Actividad,Distribucion|null>};
+export type Guardada = {id:string;configuracion:Configuracion};
+export type Estado = {mesas:Record<string,{grupo:number;personas:number}>;personal:Record<string,{grupo:number;actividad:string}>;cola:number[];atendidos:number;abandonos:number;personas_atendidas:number};
+export type Evento = {secuencia:number;tiempo:number;entidad:number|null;accion:string;recursos:string[];estado:Estado};
+export type Resultado = {version_modelo:string;version_entorno:Record<string,string>;semilla:number;configuracion:Configuracion;metricas:Record<string,number>;recursos:{recurso:string;ocupado_minutos:number;utilizacion:number}[];grupos:Record<string,unknown>[];eventos:Evento[]};
+export type Resumen = {media:number;ic95:[number,number]|null;replicas:number};
+export type Escenario = {id:number;nombre:string;configuracion:Configuracion;eficiente:boolean;resumen:Record<string,Resumen>};
+export type Experimento = {version_modelo:string;version_entorno:Record<string,string>;semillas_replicas:number[];replicas:number;escenarios:Escenario[];diferencias_pareadas:{escenario:number;base:number;metricas:Record<string,Resumen>}[];sensibilidad?:{recurso:string;desde:number;hasta:number;incremento:number;cambios_por_unidad:Record<string,number>}[]};
+export type Trabajo = {id:string;estado:'pendiente'|'ejecutando'|'completado'|'error';error?:string;creado?:string;nombre?:string;semilla?:number;progreso?:{completadas:number;total:number|null}};

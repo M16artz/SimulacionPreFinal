@@ -1,0 +1,23 @@
+version_esquema: '1.0'
+nombre: Bistró · ejemplo sintético
+sintetica: true
+notas: Datos inventados únicamente para verificación académica. Los tiempos de atención no han sido aprobados ni calibrados con un restaurante real.
+mesas: 11
+capacidad_mesa: 4
+meseros: 1
+cocineras: 3
+apertura: 540
+cierre: 1200
+llegadas:
+  - {inicio: 540, fin: 720, tasa: 8}
+  - {inicio: 720, fin: 840, tasa: 25}
+  - {inicio: 840, fin: 1080, tasa: 8}
+  - {inicio: 1080, fin: 1200, tasa: 25}
+probabilidades_grupo: [0.30, 0.30, 0.18, 0.10, 0.06, 0.03, 0.02, 0.01]
+tiempos:
+  pedido: {tipo: uniforme, minimo: 2, maximo: 4}
+  preparacion: {tipo: triangular, minimo: 8, moda: 12, maximo: 20}
+  entrega: {tipo: uniforme, minimo: 1, maximo: 2}
+  consumo: {tipo: triangular, minimo: 10, moda: 20, maximo: 40}
+  cobro: {tipo: uniforme, minimo: 1, maximo: 3}
+  paciencia: {tipo: uniforme, minimo: 0, maximo: 40}

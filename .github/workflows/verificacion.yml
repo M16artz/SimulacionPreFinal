@@ -1,0 +1,28 @@
+name: Verificación del simulador
+on: [push, pull_request]
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m venv .venv
+      - run: .venv/bin/python scripts/preparar.py
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: .venv/bin/python scripts/verificar.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidencia-y-versiones
+          path: |
+            documentacion/evidencia_verificacion.json
+            documentacion/entorno_instalado.json
+            backend/requirements.lock
+            frontend/package-lock.json
+            frontend/test-results/

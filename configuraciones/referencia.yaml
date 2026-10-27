@@ -1,0 +1,23 @@
+version_esquema: '1.0'
+nombre: Referencia · tiempos pendientes
+sintetica: false
+notas: Modelo académico de referencia. Pedido, preparación, entrega y cobro requieren aprobación. La paciencia uniforme es una hipótesis configurable, no una medición.
+mesas: 11
+capacidad_mesa: 4
+meseros: 1
+cocineras: 3
+apertura: 540
+cierre: 1200
+llegadas:
+  - {inicio: 540, fin: 720, tasa: 8}
+  - {inicio: 720, fin: 840, tasa: 25}
+  - {inicio: 840, fin: 1080, tasa: 8}
+  - {inicio: 1080, fin: 1200, tasa: 25}
+probabilidades_grupo: [0.30, 0.30, 0.18, 0.10, 0.06, 0.03, 0.02, 0.01]
+tiempos:
+  pedido: null
+  preparacion: null
+  entrega: null
+  consumo: {tipo: triangular, minimo: 10, moda: 20, maximo: 40}
+  cobro: null
+  paciencia: {tipo: uniforme, minimo: 0, maximo: 40}
