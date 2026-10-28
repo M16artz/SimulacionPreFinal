@@ -2,7 +2,9 @@
 
 Aplicación académica modular para configurar, simular, reproducir y comparar jornadas de restaurante. El motor Python/SimPy funciona por consola; FastAPI lo ejecuta en procesos separados y React reproduce sus eventos sin volver a simularlos.
 
-La implementación está organizada en seis fases en [el plan de trabajo](documentacion/FASES.md). El [informe de verificación](documentacion/VERIFICACION.md) distingue las pruebas ejecutadas de las pendientes por restricciones del entorno.
+La implementación está organizada en seis fases en [el plan de trabajo](documentacion/FASES.md). El [informe de verificación](documentacion/VERIFICACION_1.1.md) distingue las pruebas ejecutadas de las limitaciones del entorno.
+
+La [formulación matemática](documentacion/FORMULACION_MATEMATICA.md) documenta las longitudes promedio de las cinco colas y los contrastes de Little, incorporados en la versión 1.1.0. Se consultan en Resultados y se exportan en JSON y CSV.
 
 ## Inicio en Windows (PowerShell)
 
@@ -88,7 +90,7 @@ npx.cmd playwright install chromium
 npm.cmd run test:e2e
 ```
 
-La prueba de extremo a extremo inicia API y Vite y requiere libres los puertos 8000 y 5173. Usa `datos/e2e/` para conservar aislados sus datos. Verifica ejecución, reproducción, recuperación tras recarga, vista móvil, configuraciones, importación de pendientes y comparación experimental. La [integración continua](.github/workflows/verificacion.yml) instala y ejecuta estas verificaciones en Linux y adjunta evidencia, versiones y trazas de los fallos.
+La prueba de extremo a extremo inicia API y Vite y requiere libres los puertos 18000 y 15173. Se pueden cambiar con `RESTAURANTE_E2E_PUERTO_API` y `RESTAURANTE_E2E_PUERTO_WEB`. Usa `datos/e2e/` para conservar aislados sus datos. Verifica ejecución, reproducción, recuperación tras recarga, vista móvil, formulación matemática, configuraciones, importación de pendientes y comparación experimental. La [integración continua](.github/workflows/verificacion.yml) instala y ejecuta estas verificaciones en Linux y adjunta evidencia, versiones y trazas de los fallos. El informe documenta una limitación del cierre automático de Playwright en este Windows.
 
 Los servicios de API y reproducción pueden probarse directamente con Node, incluso antes de instalar React/Vite:
 
@@ -130,7 +132,7 @@ Los parámetros se definen en `ConfiguracionRestaurante`; los formularios consum
 
 En la primera apertura la API carga los dos archivos YAML. En aperturas posteriores conserva las configuraciones existentes. Al reiniciar, marca como fallidos los trabajos interrumpidos; estos pueden repetirse con los mismos datos. Utiliza **un único proceso Uvicorn**, cuyo pool interno cuenta con dos trabajadores; no uses `--workers` para esta persistencia académica.
 
-El motor es reproducible con las mismas versiones, configuración y semilla. Conserva además las versiones instaladas mediante `python -m pip freeze` y el `package-lock.json` que crea npm tras una instalación exitosa. Este entorno no permitió generar un bloqueo completo de dependencias.
+El motor es reproducible con las mismas versiones, configuración y semilla. Conserva además las versiones instaladas mediante `python -m pip freeze` y el `package-lock.json` que crea npm tras una instalación exitosa. Las versiones resueltas están registradas en `backend/requirements.lock` y `frontend/package-lock.json`.
 
 ## Alcance académico
 

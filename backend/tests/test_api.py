@@ -52,7 +52,8 @@ def test_trabajador_resultados_exportacion_y_snapshot(tmp_path, breve):
         assert resultado["semilla"] == 42
         assert resultado["eventos"] == cliente.get(ruta + "/eventos").json()
         assert cliente.get(ruta).json()["metricas"] == resultado["metricas"]
-        for tabla in ("grupos", "recursos", "eventos", "metricas"):
+        assert all(c["coincide"] for c in resultado["formulacion_matematica"]["little"])
+        for tabla in ("grupos", "recursos", "eventos", "metricas", "colas", "little"):
             exportado = cliente.get(ruta + f"/exportar?formato=csv&tabla={tabla}")
             assert exportado.status_code == 200 and "text/csv" in exportado.headers["content-type"]
         assert cliente.get(ruta + "/exportar").json() == resultado

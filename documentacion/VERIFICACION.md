@@ -1,4 +1,6 @@
-# Estado de verificación
+# Verificación anterior · modelo 1.0
+
+Este informe conserva el estado de la entrega anterior. El estado actual, con dependencias disponibles y pruebas de la formulación matemática, está en [VERIFICACION_1.1.md](VERIFICACION_1.1.md).
 
 ## Ejecutado en este entorno
 

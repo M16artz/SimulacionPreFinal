@@ -1,4 +1,8 @@
 import {defineConfig} from '@playwright/test';
 import {fileURLToPath} from 'node:url';
-const python=process.platform==='win32'?'../.venv/Scripts/python.exe':'../.venv/bin/python';
-export default defineConfig({testDir:'./tests/e2e',workers:1,timeout:90000,use:{baseURL:'http://127.0.0.1:5173',headless:true,trace:'retain-on-failure'},webServer:[{command:`${python} -m uvicorn restaurante.api.principal:app --app-dir ../backend/src --host 127.0.0.1 --port 8000`,env:{RESTAURANTE_DATOS:fileURLToPath(new URL('../datos/e2e',import.meta.url))},url:'http://127.0.0.1:8000/api/v1/salud',reuseExistingServer:false},{command:'npm run dev',url:'http://127.0.0.1:5173',reuseExistingServer:false}]});
+const python=fileURLToPath(new URL(process.platform==='win32'?'../.venv/Scripts/python.exe':'../.venv/bin/python',import.meta.url));
+const fuenteBackend=fileURLToPath(new URL('../backend/src',import.meta.url));
+const puertoApi=Number(process.env.RESTAURANTE_E2E_PUERTO_API??18000);
+const puertoWeb=Number(process.env.RESTAURANTE_E2E_PUERTO_WEB??15173);
+const api=`http://127.0.0.1:${puertoApi}`,web=`http://127.0.0.1:${puertoWeb}`;
+export default defineConfig({testDir:'./tests/e2e',workers:1,timeout:90000,use:{baseURL:web,headless:true,trace:'retain-on-failure'},webServer:[{command:`"${python}" -m uvicorn restaurante.api.principal:app --app-dir "${fuenteBackend}" --host 127.0.0.1 --port ${puertoApi}`,env:{RESTAURANTE_DATOS:fileURLToPath(new URL('../datos/e2e',import.meta.url))},url:`${api}/api/v1/salud`,reuseExistingServer:false},{command:`npm run dev -- --port ${puertoWeb} --strictPort`,env:{RESTAURANTE_API_URL:api},url:web,reuseExistingServer:false}]});

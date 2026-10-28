@@ -123,6 +123,40 @@ class EventoSimulacion(Contrato):
     estado: dict
 
 
+class IndicadorCola(Contrato):
+    estacion: str
+    area_grupo_minutos: float = Field(ge=0)
+    longitud_media: float = Field(ge=0)
+    numero_entidades: int = Field(ge=0)
+    espera_media: float | None
+
+
+class ContrasteLittle(Contrato):
+    ambito: str
+    poblacion: str
+    unidad_entidades: Literal["grupos"] = "grupos"
+    unidad_tiempo: Literal["minutos"] = "minutos"
+    numero_entidades: int = Field(ge=0)
+    inicio: float
+    fin: float
+    longitud_media: float = Field(ge=0)
+    tasa_efectiva: float = Field(ge=0)
+    tiempo_medio: float | None
+    producto_lambda_w: float | None
+    error_absoluto: float | None
+    aplicable: bool
+    coincide: bool | None
+    observacion: str
+
+
+class AnalisisMatematico(Contrato):
+    inicio: float
+    fin: float
+    duracion: float = Field(gt=0)
+    colas: list[IndicadorCola]
+    little: list[ContrasteLittle]
+
+
 class ResultadoSimulacion(Contrato):
     version_modelo: str
     version_entorno: dict[str, str]
@@ -132,6 +166,7 @@ class ResultadoSimulacion(Contrato):
     recursos: list[dict]
     grupos: list[dict]
     eventos: list[EventoSimulacion]
+    formulacion_matematica: AnalisisMatematico | None = None
 
 
 class Rango(Contrato):

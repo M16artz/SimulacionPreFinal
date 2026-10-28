@@ -10,6 +10,7 @@ from restaurante.simulacion.generador_llegadas import generar_demanda
 from restaurante.simulacion.gestor_mesas import GestorMesas
 from restaurante.simulacion.gestor_personal import GestorPersonal
 from restaurante.analisis.metricas import calcular_metricas
+from restaurante.analisis.colas import calcular_colas_y_little, ESTACIONES
 
 
 def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoSimulacion:
@@ -23,6 +24,9 @@ def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoS
     cocina = GestorPersonal(entorno, configuracion.cocineras, "cocinera")
     eventos, registros = [], []
     estado = {"mesas": {}, "personal": {}, "cola": [], "atendidos": 0, "abandonos": 0, "personas_atendidas": 0}
+    estado["colas"] = {estacion: [] for estacion in ESTACIONES}
+    estado["colas"]["mesa"] = estado["cola"]
+    estado["en_sistema"] = []
     ocupacion = {**{f"mesa-{i+1}": 0.0 for i in range(configuracion.mesas)}, **{f"mesero-{i+1}": 0.0 for i in range(configuracion.meseros)}, **{f"cocinera-{i+1}": 0.0 for i in range(configuracion.cocineras)}}
 
     def registrar(accion, grupo=None, recursos=None):
@@ -36,7 +40,10 @@ def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoS
 
     def actividad(grupo, nombre, gestor, registro):
         inicio_cola = entorno.now
+        estado["colas"][nombre].append(grupo.id)
+        registrar(f"entrada_cola_{nombre}", grupo.id)
         recurso = yield gestor.solicitar()
+        estado["colas"][nombre].remove(grupo.id)
         registro[f"espera_{nombre}"] = entorno.now - inicio_cola
         estado["personal"][recurso] = {"grupo": grupo.id, "actividad": nombre}
         registrar(f"inicio_{nombre}", grupo.id, [recurso])
@@ -51,6 +58,7 @@ def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoS
     def atender(grupo):
         registro = grupo.model_dump() | {"estado": "esperando"}
         registros.append(registro)
+        estado["en_sistema"].append(grupo.id)
         estado["cola"].append(grupo.id)
         registrar("llegada", grupo.id)
         solicitud = mesas.solicitar(grupo.personas)
@@ -61,6 +69,7 @@ def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoS
             mesas.cancelar(solicitud)
             registro.update(estado="abandono", espera_mesa=float(entorno.now - grupo.llegada), salida=float(entorno.now))
             estado["abandonos"] += 1
+            estado["en_sistema"].remove(grupo.id)
             registrar("abandono", grupo.id)
             return
         asignadas = solicitud.value
@@ -85,6 +94,7 @@ def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoS
             del estado["mesas"][mesa]
         estado["atendidos"] += 1
         estado["personas_atendidas"] += grupo.personas
+        estado["en_sistema"].remove(grupo.id)
         registrar("salida", grupo.id, nombres)
         mesas.liberar(asignadas)
 
@@ -101,4 +111,6 @@ def simular(configuracion: ConfiguracionRestaurante, semilla: int) -> ResultadoS
 
     entorno.run(until=entorno.process(jornada()))
     metricas, recursos = calcular_metricas(registros, ocupacion, configuracion.apertura, float(entorno.now))
-    return ResultadoSimulacion(version_modelo=VERSION_MODELO, version_entorno={"python": platform.python_version(), **{nombre: version(nombre) for nombre in ("simpy", "numpy", "pydantic")}}, semilla=semilla, configuracion=configuracion, metricas=metricas, recursos=recursos, grupos=registros, eventos=eventos)
+    analisis, indicadores = calcular_colas_y_little(eventos, registros, configuracion.apertura, float(entorno.now))
+    metricas.update(indicadores)
+    return ResultadoSimulacion(version_modelo=VERSION_MODELO, version_entorno={"python": platform.python_version(), **{nombre: version(nombre) for nombre in ("simpy", "numpy", "pydantic")}}, semilla=semilla, configuracion=configuracion, metricas=metricas, recursos=recursos, grupos=registros, eventos=eventos, formulacion_matematica=analisis)

@@ -6,6 +6,7 @@ __pycache__/
 node_modules/
 .npm-cache/
 dist/
+*.tsbuildinfo
 datos/
 frontend/test-results/
 frontend/playwright-report/

@@ -1,5 +1,7 @@
 # Implementación por fases
 
+**Actualización 1.1.0:** quedaron implementadas la integración temporal de cinco colas y siete contrastes de Little, con presentación y exportación. La verificación actual alcanza **82 pruebas Pytest, 14 Vitest, 8 de servicios Node y build aprobados**. Los cuatro casos de navegador completaron sus aserciones; el cierre de servidores de Playwright quedó limitado por el entorno Windows. Las referencias a dependencias pendientes de las filas históricas siguientes quedan reemplazadas por [el informe actual](VERIFICACION_1.1.md).
+
 Se desarrolló en orden, con límites entre responsabilidades. «Implementado» describe el código entregado; la aceptación completa requiere ejecutar las suites señaladas. No se consideran aprobados los tiempos operativos pendientes.
 
 En la continuación se añadieron gestión concurrente de trabajos, progreso y recuperación de consultas, experimentos por consola, sensibilidad por unidad de recurso, presentación de diferencias pareadas y scripts de preparación/verificación. La evidencia actual incluye **31 pruebas Python y 8 pruebas de servicios TypeScript aprobadas**. Entre ellas se ejecutaron un trabajador real en otro proceso, exportaciones por consola, Pareto y sensibilidad. Las filas siguientes conservan el alcance de cada fase; HTTP, SciPy, React y navegador todavía necesitan sus dependencias para cerrar la aceptación.

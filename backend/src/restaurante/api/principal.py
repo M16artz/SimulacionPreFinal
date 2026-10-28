@@ -9,6 +9,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import Field, ValidationError
+from restaurante import VERSION_MODELO
 from restaurante.dominio.contratos import Contrato, ConfiguracionRestaurante, SolicitudExperimento
 from restaurante.infraestructura.persistencia import AlmacenArchivos
 from restaurante.aplicacion.trabajos import GestorTrabajos, ColaLlenaError, TrabajadorNoDisponibleError
@@ -44,7 +45,7 @@ def crear_aplicacion(raiz_datos=None):
         finally:
             gestor.cerrar()
 
-    aplicacion = FastAPI(title="Simulador de restaurante", version="1.0.0", lifespan=ciclo)
+    aplicacion = FastAPI(title="Simulador de restaurante", version=VERSION_MODELO, lifespan=ciclo)
 
     @aplicacion.exception_handler(RequestValidationError)
     async def error_validacion(solicitud, error):
@@ -82,7 +83,7 @@ def crear_aplicacion(raiz_datos=None):
 
     @aplicacion.get("/api/v1/salud")
     def salud():
-        return {"estado": "disponible", "version_modelo": "1.0.0"}
+        return {"estado": "disponible", "version_modelo": VERSION_MODELO}
 
     @aplicacion.get("/api/v1/configuraciones/esquema")
     def esquema():
@@ -163,9 +164,15 @@ def crear_aplicacion(raiz_datos=None):
         return resultado("simulaciones", identificador)
 
     @aplicacion.get("/api/v1/simulaciones/{identificador}/exportar")
-    def exportar_simulacion(identificador: UUID, formato: Literal["json", "csv"] = "json", tabla: Literal["grupos", "recursos", "eventos", "metricas"] = "grupos"):
+    def exportar_simulacion(identificador: UUID, formato: Literal["json", "csv"] = "json", tabla: Literal["grupos", "recursos", "eventos", "metricas", "colas", "little"] = "grupos"):
         datos = resultado("simulaciones", identificador)
-        filas = [datos[tabla]] if tabla == "metricas" else datos[tabla]
+        if tabla in ("colas", "little"):
+            analisis = datos.get("formulacion_matematica")
+            if analisis is None:
+                raise HTTPException(409, "Esta ejecución anterior no contiene el análisis de colas y Little. Ejecute nuevamente su configuración y semilla.")
+            filas = analisis[tabla]
+        else:
+            filas = [datos[tabla]] if tabla == "metricas" else datos[tabla]
         return exportar(datos, formato, f"simulacion-{tabla}", filas)
 
     @aplicacion.post("/api/v1/experimentos", status_code=202)

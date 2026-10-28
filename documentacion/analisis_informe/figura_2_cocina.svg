@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE svg
+  PUBLIC '-//W3C//DTD SVG 1.0//EN'
+  'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'>
+<svg width="1050" height="600" preserveAspectRatio="xMinYMin meet" viewBox="0 0 1050 600" xmlns="http://www.w3.org/2000/svg" version="1.0" fill-rule="evenodd" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<title>...</title>
+	<desc>...</desc>
+	<clipPath id="clip">
+		<rect x="0" y="0" width="1050" height="600"/>
+	</clipPath>
+	<g id="group" transform="scale(1,-1) translate(0,-600)" style="clip-path: url(#clip)">
+		<g transform="">
+			<rect x="0" y="0" width="1050" height="600" style="stroke: none; stroke-linecap: butt; stroke-width: 1; fill: rgb(100%,100%,100%); fill-rule: evenodd;"/>
+			<text x="70" y="560" style="font-family: Helvetica-Bold; font-size: 21px;fill: rgb(14%,22%,20%); stroke:none;" transform="translate(0,1120) scale(1,-1)">Efecto de ampliar la capacidad de cocina</text>
+			<text x="70" y="533" style="font-family: Helvetica; font-size: 12px;fill: rgb(32%,38%,36%); stroke:none;" transform="translate(0,1066) scale(1,-1)">Permanencia media (minutos), manteniendo 13 mesas y 3 meseros. El eje vertical comienza en 40 min.</text>
+			<text x="70" y="24" style="font-family: Times-Roman; font-size: 11px;fill: rgb(32%,38%,36%); stroke:none;" transform="translate(0,48) scale(1,-1)">Fuente: experimento(2).csv. Medias de 5 réplicas con semillas comunes; datos sintéticos.</text>
+			<g transform="">
+				<g transform="">
+					<g transform="">
+						<path d="M 85,110 L 985,110 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+					</g>
+					<g transform="">
+						<path d="M 85,110 L 85,105 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 310,110 L 310,105 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 535,110 L 535,105 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 760,110 L 760,105 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 985,110 L 985,105 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+					</g>
+					<g transform="">
+						<g transform=" matrix(1,0,0,1,85,105)">
+							<text x="-3.0" y="-12.0" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-24) scale(1,-1)">3</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,310,105)">
+							<text x="-3.0" y="-12.0" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-24) scale(1,-1)">4</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,535,105)">
+							<text x="-3.0" y="-12.0" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-24) scale(1,-1)">5</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,760,105)">
+							<text x="-3.0" y="-12.0" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-24) scale(1,-1)">6</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,985,105)">
+							<text x="-3.0" y="-12.0" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-24) scale(1,-1)">7</text>
+						</g>
+					</g>
+				</g>
+				<g transform="">
+					<g transform="">
+						<path d="M 85,110 L 85,475 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+					</g>
+					<g transform="">
+						<path d="M 85,110 L 80,110 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 85,231.666667 L 80,231.666667 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 85,353.333333 L 80,353.333333 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+						<path d="M 85,475 L 80,475 Z" style="stroke: rgb(0%,0%,0%); stroke-linecap: butt; stroke-width: 1;"/>
+					</g>
+					<g transform="">
+						<g transform=" matrix(1,0,0,1,80,110)">
+							<text x="-12.0" y="-4.800000000000001" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-9) scale(1,-1)">40</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,80,231.666667)">
+							<text x="-12.0" y="-4.800000000000001" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-9) scale(1,-1)">45</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,80,353.333333)">
+							<text x="-12.0" y="-4.800000000000001" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-9) scale(1,-1)">50</text>
+						</g>
+						<g transform=" matrix(1,0,0,1,80,475)">
+							<text x="-12.0" y="-4.800000000000001" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,-9) scale(1,-1)">55</text>
+						</g>
+					</g>
+				</g>
+				<path d="M 85,231.666667 L 985,231.666667 Z" style="stroke: rgb(89%,91%,90%); stroke-linecap: butt; stroke-width: 0.25;"/>
+				<path d="M 85,353.333333 L 985,353.333333 Z" style="stroke: rgb(89%,91%,90%); stroke-linecap: butt; stroke-width: 0.25;"/>
+				<path d="M 85,475 L 985,475 Z" style="stroke: rgb(89%,91%,90%); stroke-linecap: butt; stroke-width: 0.25;"/>
+				<g transform="">
+					<polyline points="85 372.9327, 310 253.9601, 535 227.9084, 760 223.2519, 985 223.3728" style="stroke: rgb(15%,40%,36%); stroke-linecap: round; stroke-width: 2; fill: None; fill-rule: evenodd;"/>
+					<circle cx="85.0" cy="372.9327132454038" r="4.0" style="stroke: rgb(15%,40%,36%); stroke-linecap: butt; stroke-width: 0.1; fill: rgb(15%,40%,36%); fill-rule: evenodd;"/>
+					<circle cx="310.0" cy="253.96014466745922" r="4.0" style="stroke: rgb(15%,40%,36%); stroke-linecap: butt; stroke-width: 0.1; fill: rgb(15%,40%,36%); fill-rule: evenodd;"/>
+					<circle cx="535.0" cy="227.90842053460557" r="4.0" style="stroke: rgb(15%,40%,36%); stroke-linecap: butt; stroke-width: 0.1; fill: rgb(15%,40%,36%); fill-rule: evenodd;"/>
+					<circle cx="760.0" cy="223.25186929206697" r="4.0" style="stroke: rgb(15%,40%,36%); stroke-linecap: butt; stroke-width: 0.1; fill: rgb(15%,40%,36%); fill-rule: evenodd;"/>
+					<circle cx="985.0" cy="223.37280015111605" r="4.0" style="stroke: rgb(15%,40%,36%); stroke-linecap: butt; stroke-width: 0.1; fill: rgb(15%,40%,36%); fill-rule: evenodd;"/>
+				</g>
+			</g>
+			<text x="71.5" y="388.9327132454038" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,777) scale(1,-1)">50,81</text>
+			<text x="296.5" y="269.9601446674592" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,539) scale(1,-1)">45,92</text>
+			<text x="521.5" y="243.90842053460557" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,487) scale(1,-1)">44,85</text>
+			<text x="746.5" y="239.251869292067" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,478) scale(1,-1)">44,65</text>
+			<text x="971.5" y="239.37280015111605" style="font-family: Times-Roman; font-size: 12px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,478) scale(1,-1)">44,66</text>
+			<text x="435" y="67" style="font-family: Times-Roman; font-size: 13px;fill: rgb(0%,0%,0%); stroke:none;" transform="translate(0,134) scale(1,-1)">Cantidad de cocineras</text>
+		</g>
+	</g>
+</svg>

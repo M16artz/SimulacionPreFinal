@@ -1,0 +1,629 @@
+% !TeX program = xelatex
+% Archivo autocontenido: tablas, bibliografía y figuras se definen aquí.
+% Compilar dos veces con XeLaTeX (también admite LuaLaTeX o pdfLaTeX).
+% En Overleaf: subir este archivo y seleccionar XeLaTeX.
+% Fuente: InformeFinalSimulacion(2).docx y propuesta de secciones 6.4 a 10.
+% Los experimentos históricos corresponden a datos sintéticos del modelo 1.0.0.
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T1]{fontenc}
+  \usepackage{newtxtext,newtxmath}
+\else
+  \usepackage{fontspec}
+  \setmainfont{TeX Gyre Termes}
+  \usepackage{amsmath,amssymb}
+\fi
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=1.7cm,top=1.9cm,bottom=1.9cm]{geometry}
+\usepackage{booktabs,tabularx,array,graphicx,microtype}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage{dblfloatfix}
+\usepackage[hyphens]{url}
+\usepackage[hidelinks]{hyperref}
+\urlstyle{same}
+\setlength{\columnsep}{0.65cm}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\thesection}{\Roman{section}}
+\renewcommand{\thesubsection}{\Alph{subsection}}
+\renewcommand{\thesubsubsection}{\arabic{subsubsection}}
+\renewcommand{\thetable}{\Roman{table}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\definecolor{verde}{HTML}{27665C}
+\definecolor{azul}{HTML}{3E6B96}
+\definecolor{naranja}{HTML}{C08332}
+\pgfplotsset{informe/.style={width=.94\textwidth,height=6.4cm,
+  tick label style={font=\small},label style={font=\small},
+  legend style={font=\small,draw=none,at={(.5,1.06)},anchor=south,legend columns=-1},
+  ymajorgrids=true,grid style={gray!20},axis lines*=left}}
+
+\title{Optimización de la cantidad de mesas, meseros y cocineros en un restaurante mediante simulación de eventos discretos y redes de colas}
+\author{\begin{tabular}{c}Miguel Armas\\Universidad Nacional de Loja\\Loja, Ecuador\\\small\texttt{miguel.armas@unl.edu.ec}\end{tabular} \and \begin{tabular}{c}Katheryn Contento\\Universidad Nacional de Loja\\Loja, Ecuador\\\small\texttt{katheryn.contento@unl.edu.ec}\end{tabular} \and \begin{tabular}{c}Yandri Piscocama\\Universidad Nacional de Loja\\Loja, Ecuador\\\small\texttt{yandri.piscocama@unl.edu.ec}\end{tabular} \and \begin{tabular}{c}Andres Tapia\\Universidad Nacional de Loja\\Loja, Ecuador\\\small\texttt{andres.tapia@unl.edu.ec}\end{tabular}}
+\date{}
+\begin{document}
+\maketitle
+\noindent\textbf{Resumen---} Se desarrolló un modelo de red de colas mediante simulación de eventos discretos en Python y SimPy para evaluar cantidades de mesas, meseros y cocineras en un restaurante. Se representaron llegadas variables por horario, asignación conjunta de mesas, abandono y atención con personal compartido. Se analizaron tres lotes por fuerza bruta, con cuatro o cinco réplicas por escenario y 183 combinaciones distintas. Los experimentos utilizaron datos sintéticos, llegadas pico de 20 grupos por hora y paciencia uniforme entre 0 y 20 minutos. En el lote de cinco réplicas y hasta tres meseros, la configuración 13/3/6 obtuvo la menor permanencia media observada, de 44,65 minutos, frente a 62,69 en la referencia 11/1/3. El abandono disminuyó de 31,45 \% a 9,56 \% y las personas atendidas aumentaron de 225,40 a 308,20 por jornada. Se identificaron rendimientos marginales reducidos y diferencias entre minimizar permanencia y la eficiencia de Pareto. Las conclusiones se limitan a las configuraciones y supuestos analizados, sin afirmar validación empírica ni un óptimo económico universal.
+
+\noindent\textit{Palabras Clave — Teoría de colas, redes de colas, simulación de eventos discretos, optimización de recursos, tiempos de espera.}
+
+\noindent\textit{Keywords — Queueing theory, queueing networks, discrete-event simulation, resource optimization, waiting times.}
+
+\section{INTRODUCCIÓN}
+
+La gestión eficiente de los recursos operativos en los restaurantes constituye un desafío debido a la variabilidad en la llegada de clientes y a la capacidad limitada de atención. El servicio comprende diferentes etapas, como la llegada de comensales, asignación de mesas, recepción de pedidos, preparación de alimentos y pago, las cuales dependen de la disponibilidad de recursos. Cuando la demanda supera la capacidad de alguna de estas actividades, se generan tiempos de espera que pueden afectar el funcionamiento general del establecimiento. Por ejemplo, aumentar la cantidad de mesas permite recibir más clientes, pero también incrementa la demanda de atención de meseros y cocineros. Por ello, ampliar un recurso de manera aislada no garantiza una mejora del servicio, ya que la congestión puede trasladarse hacia otra etapa \cite{ref2}, \cite{ref9}.
+
+La teoría de colas permite estudiar estas situaciones mediante variables como la tasa de llegada de clientes, la tasa de servicio, el número de servidores disponibles, el factor de utilización y los tiempos promedio de espera. Uno de sus fundamentos es la ley de Little, expresada como L = \(\lambda\)W, que relaciona el número promedio de clientes en un sistema, la tasa efectiva de llegada y el tiempo promedio de permanencia, bajo las condiciones correspondientes \cite{ref1}. Cuando un servicio comprende varias actividades interdependientes, estas pueden representarse mediante una red de colas, en la que cada estación dispone de una capacidad determinada. Dey \cite{ref2} aplicaron este enfoque en un restaurante de Bangladesh mediante modelos M/M/s y algoritmos genéticos para determinar cantidades de servidores que minimizaran los costos operativos, considerando restricciones asociadas con los tiempos de espera. Su investigación proporciona una referencia para evaluar cómo la cantidad de recursos disponibles influye en el desempeño conjunto del servicio.
+
+La disponibilidad de mesas también constituye un elemento fundamental en la capacidad de atención. Kimes y Thompson \cite{ref4} analizaron diferentes combinaciones de mesas en un restaurante de la cadena Chevys mediante simulación computacional, considerando la demanda, el tamaño de los grupos y la duración del servicio. Los resultados indicaron que la configuración propuesta podía atender hasta un 30 \% más de clientes sin superar los tiempos de espera originales. Complementariamente, Kimes \cite{ref5} estudió la implementación de mejoras operativas en Chevys Arrowhead, destacando la importancia de la duración del servicio y la rotación de mesas para aprovechar la capacidad disponible. Ambos estudios permiten comprender que el rendimiento del restaurante depende tanto de la disponibilidad de mesas como del tiempo durante el cual permanecen ocupadas. Respecto al personal, René \cite{ref7} propusieron un modelo de simulación multiagente para analizar las interacciones entre clientes, meseros y trabajadores de cocina, considerando las decisiones relacionadas con la preparación de alimentos. Por su parte, Buzali \cite{ref8} desarrollaron una simulación mediante Simio para evaluar diferentes cantidades de cajeros y baristas en una cafetería Starbucks de Ciudad de México. Su investigación identificó la estación de cobro como un punto de congestión y determinó que una configuración de tres cajeros y tres baristas permitía reducir aproximadamente un 40 \% el tiempo de espera bajo las condiciones simuladas. Estos antecedentes muestran la utilidad de evaluar conjuntamente las capacidades de atención y preparación, en lugar de analizar cada recurso de forma independiente.
+
+Asimismo, Samad \cite{ref9} utilizaron Arena para estudiar las colas de un restaurante, considerando tiempos de llegada, atención y utilización de servidores. Su investigación registró un tiempo promedio de espera de 24,49 minutos y diferencias en los niveles de utilización del personal, lo que permitió identificar desequilibrios operativos. De manera similar, Herrera-Barbas \cite{ref10} desarrollaron una simulación de eventos discretos para analizar la eficiencia de un establecimiento de comida rápida mediante datos de llegadas, tiempos de servicio y disponibilidad de trabajadores. Estos estudios proporcionan referencias metodológicas para representar el funcionamiento de un restaurante y comparar alternativas mediante indicadores cuantitativos. Además, Sargent \cite{ref3} establece la importancia de verificar que el modelo computacional funcione correctamente y validar que represente adecuadamente el sistema dentro de sus condiciones de aplicación.
+
+En conjunto, los antecedentes muestran que las redes de colas y la simulación computacional permiten estudiar la relación entre la demanda, los tiempos de espera y la cantidad de recursos disponibles \cite{ref2}, \cite{ref4}, \cite{ref8}–\cite{ref10}. A partir de estos fundamentos, el presente proyecto propone desarrollar un modelo de simulación de eventos discretos en Python para representar las principales etapas del servicio de un restaurante y evaluar diferentes combinaciones de mesas, meseros y cocineros. El análisis se limitará a la cantidad y utilización de estos recursos, sin considerar su distribución física dentro del establecimiento. Mediante la comparación de escenarios bajo condiciones equivalentes de demanda, se calcularán indicadores como la utilización de recursos, los tiempos de espera y permanencia, la longitud de las colas y el número de clientes atendidos.
+
+El objetivo del trabajo es identificar una combinación eficiente de mesas, meseros y cocineros que permita equilibrar la capacidad operativa y los tiempos de atención. Para ello, se plantea caracterizar el sistema, formular el modelo matemático e implementar experimentos de simulación que permitan comparar diferentes configuraciones. Inicialmente se utilizarán parámetros hipotéticos, por lo que los resultados deberán interpretarse conforme a los supuestos establecidos, sin considerarlos una validación empírica de un restaurante real. La configuración seleccionada corresponderá a la alternativa más favorable entre las evaluadas y según los criterios definidos, proporcionando una base cuantitativa para apoyar decisiones sobre la asignación de recursos, sin considerar costos operativos.
+
+\section{OBJETIVOS}
+
+\subsection{Objetivo general}
+
+Determinar la combinación adecuada de mesas, meseros y cocineros mediante un modelo de red de colas simulado en Python, para establecer la cantidad ideal de dichos recursos que brinde la mayor eficiencia operativa al restaurante.
+
+\subsection{Objetivos específicos}
+
+1. Implementar un modelo computacional de red de colas en Python que represente las etapas del servicio de un restaurante, integrando las tasas de llegada, los tiempos de atención y la capacidad operativa de mesas, meseros y cocineros.
+
+2. Evaluar diferentes combinaciones de estos recursos (mesas, meseros y cocineros) mediante experimentos de simulación y el análisis de métricas de rendimiento (tiempos de espera, longitud de colas y utilización), para determinar la configuración ideal que cumpla con los criterios de eficiencia previamente establecidos
+
+\section{METODOLOGÍA}
+
+\subsection{Enfoque}
+
+La investigación adopta un enfoque cuantitativo, fundamentado en la representación matemática de las operaciones de un restaurante y en la evaluación de indicadores de desempeño mediante simulación computacional. Se analizarán variables como la tasa de llegada de grupos de clientes, la cantidad de mesas, meseros y cocineros, los tiempos de atención y preparación, la utilización de recursos y los tiempos de espera. Estos parámetros permitirán caracterizar el funcionamiento del establecimiento y comparar diferentes configuraciones de recursos bajo condiciones controladas.
+
+Este enfoque se sustenta en investigaciones previas sobre optimización de servicios. Dey \cite{ref2} emplearon modelos de redes de colas para determinar cantidades de servidores, mientras que Buzali \cite{ref8} y Samad \cite{ref9} utilizaron simulación computacional para estudiar la capacidad de atención. Asimismo, Herrera-Barbas \cite{ref10} aplicaron un enfoque cuantitativo descriptivo para analizar procesos de servicio mediante simulación de eventos discreto
+
+\subsection{Tipo de estudio}
+
+El estudio se plantea como una investigación aplicada, descriptiva, comparativa y experimental mediante simulación computacional. Su carácter aplicado corresponde al análisis de un problema de asignación de recursos operativos, considerando exclusivamente la cantidad de mesas, meseros y cocineros disponibles en un restaurante.
+
+Es descriptivo porque se representarán etapas del servicio, las condiciones de llegada de clientes y los tiempos asociados con cada actividad. Es comparativo porque se examinarán diferentes combinaciones de recursos para determinar su influencia sobre el rendimiento del sistema. Finalmente, es experimental mediante simulación, dado que se modificarán deliberadamente los parámetros de capacidad y demanda para observar sus efectos sobre los indicadores de desempeño, sin intervenir físicamente en un establecimiento.
+
+\subsection{Herramientas y recursos}
+
+Se utilizó Python y SimPy para implementar el motor de eventos discretos. NumPy gestionó la generación aleatoria y SciPy los intervalos estadísticos. Los resultados se conservaron en CSV y JSON. La aplicación incorporó una API FastAPI y una interfaz React para configurar escenarios, reproducir eventos y consultar gráficos. Las figuras del análisis se elaboraron con ReportLab Charts a partir de las exportaciones verificadas.
+
+El modelo se fundamentó en una red de colas con recursos compartidos. Las expresiones M/M/s se conservaron como referencia teórica, sin utilizarlas directamente para producir los resultados experimentales. Esta elección consideró los antecedentes de Dey et al. \cite{ref2}, Buzali et al. \cite{ref8} y Samad et al. \cite{ref9}.
+
+La configuración de referencia estará constituida por 11 mesas de cuatro puestos, una mesera y tres cocineras. Las mesas representarán recursos ocupados durante la permanencia de los grupos, mientras que la mesera participará en la recepción de pedidos, entrega de alimentos y cobro. Las cocineras se encargarán de preparar los pedidos grupales conforme se encuentren disponibles.
+
+\subsection{Procedimiento}
+
+El trabajo se desarrolló mediante las diez etapas que se describen a continuación. Se diferenciaron la construcción del instrumento computacional y el análisis de los experimentos archivados, con el fin de conservar la correspondencia entre parámetros, versiones y resultados.
+
+\subsubsection*{Etapa 1. Identificación y análisis del problema}
+
+Se identificó como problema la asignación de capacidad entre mesas, meseros y cocineras durante una jornada con demanda variable. Se representó el servicio como una secuencia de llegada del grupo, espera por mesa, toma del pedido, preparación, entrega, consumo, cobro y salida. Las mesas se consideraron ocupadas hasta finalizar el pago, mientras que el personal se liberó al concluir cada actividad.
+
+Se estableció una configuración de comparación de 11 mesas de cuatro puestos, un mesero y tres cocineras. El alcance se limitó a cantidades y disponibilidad de recursos. No se representaron distancias, distribución arquitectónica ni costos. Esta delimitación permitió estudiar si una ampliación localizada reducía la congestión general o la trasladaba hacia otra etapa.
+
+\subsubsection*{Etapa 2. Revisión de literatura científica}
+
+Se revisaron las investigaciones ya incluidas en la introducción. Dey et al. \cite{ref2} aportaron una referencia sobre redes de colas y dimensionamiento de servidores. Kimes y Thompson \cite{ref4} mostraron la utilidad de evaluar configuraciones de mesas mediante simulación. Los trabajos de Buzali et al. \cite{ref8} y Samad et al. \cite{ref9} orientaron la comparación de capacidad, esperas y utilización. Herrera-Barbas et al. \cite{ref10} proporcionaron un antecedente de análisis de servicio mediante simulación de eventos discretos. Finalmente, Sargent \cite{ref3} permitió diferenciar la verificación del programa y la validación de su representación del sistema real.
+
+La revisión se utilizó para seleccionar indicadores y criterios de interpretación. Los porcentajes de mejora de otros establecimientos no se adoptaron como metas del presente experimento, debido a sus diferencias de demanda, recursos y definición de indicadores.
+
+\subsubsection*{Etapa 3. Selección de los modelos y métodos}
+
+Se seleccionó una red de colas implementada mediante simulación de eventos discretos en Python y SimPy. Los grupos de clientes constituyeron las entidades; las mesas, meseros y cocineras se representaron como recursos de capacidad limitada. La asignación de mesas fue compatible y no estrictamente FIFO: un grupo posterior pudo ser atendido cuando existía capacidad suficiente, aunque otro grupo continuara esperando.
+
+Los grupos de cinco a ocho personas adquirieron dos mesas simultáneamente, conservando un único pedido grupal. Los meseros compartieron las tareas de pedido, entrega y cobro. La cocina atendió pedidos grupales conforme se liberaron sus recursos. Se incorporó abandono únicamente durante la espera por mesa.
+
+Para explorar las cantidades de recursos se empleó enumeración exhaustiva o fuerza bruta sobre rejillas finitas. Las expresiones M/M/s se mantuvieron como referencias teóricas; los resultados presentados se obtuvieron del motor de eventos y no de aplicar directamente fórmulas estacionarias de ese modelo.
+
+\subsubsection*{Etapa 4. Definición de variables y parámetros}
+
+Las variables de decisión fueron las cantidades de mesas M, meseros S y cocineras C. Las entradas aleatorias fueron los intervalos entre llegadas, el tamaño del grupo, la paciencia y las duraciones de las actividades. Las salidas comprendieron atención completada, abandono, esperas, permanencia y utilización.
+
+\begin{table*}[!tb]\centering\small
+\caption{Parámetros efectivos de los tres experimentos analizados}
+\label{tab:1}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YY}
+\toprule
+\textbf{Parámetro} & \textbf{Valor utilizado} \\
+\midrule
+Jornada de admisión & 09:00 a 20:00 \\
+Llegadas normales & 8 grupos/hora \\
+Llegadas en horas pico & 20 grupos/hora \\
+Horas pico & 12:00–14:00 y 18:00–20:00 \\
+Capacidad de cada mesa & 4 personas \\
+Tamaños de grupo & 1 a 8 personas \\
+Probabilidades para tamaños 1 a 8 & 30 \%, 30 \%, 18 \%, 10 \%, 6 \%, 3 \%, 2 \% y 1 \% \\
+Pedido & Uniforme entre 2 y 4 minutos \\
+Preparación por pedido grupal & Triangular: mínimo 8, moda 12 y máximo 20 minutos \\
+Entrega & Uniforme entre 1 y 2 minutos \\
+Consumo & Triangular: mínimo 10, moda 20 y máximo 40 minutos \\
+Cobro & Uniforme entre 1 y 3 minutos \\
+Paciencia para obtener mesa & Uniforme entre 0 y 20 minutos \\
+Cierre & Se detuvieron las llegadas y se completó el desenlace de los grupos admitidos \\
+Naturaleza de los datos & Sintéticos, sin calibración empírica \\
+\bottomrule\end{tabularx}\end{table*}
+
+\begin{table*}[!tb]\centering\small
+\caption{Variables del modelo}
+\label{tab:2}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYY}
+\toprule
+\textbf{Símbolo} & \textbf{Variable} & \textbf{Clasificación} \\
+\midrule
+$\lambda(t)$ & Tasa de llegada según el horario & Entrada \\
+$G$ & Tamaño del grupo & Entrada aleatoria \\
+$T_{\mathrm{pedido}}$ & Duración de toma de pedido & Entrada aleatoria \\
+$T_{\mathrm{preparacion}}$ & Duración de preparación & Entrada aleatoria \\
+$T_{\mathrm{entrega}}$ & Duración de entrega & Entrada aleatoria \\
+$T_{\mathrm{consumo}}$ & Duración de consumo & Entrada aleatoria \\
+$T_{\mathrm{cobro}}$ & Duración de cobro & Entrada aleatoria \\
+$P$ & Paciencia de espera por mesa & Entrada aleatoria \\
+$M$ & Cantidad de mesas & Variable de decisión \\
+$S$ & Cantidad de meseros & Variable de decisión \\
+$C$ & Cantidad de cocineros & Variable de decisión \\
+$\overline W_{q,i}$ & Tiempo promedio de espera & Indicador de salida \\
+$\overline L_{q,i}$ & Longitud promedio de cola & Indicador de salida \\
+$\overline W_{\mathrm{total}}$ & Tiempo promedio de permanencia & Indicador de salida \\
+$U_r$ & Utilización de recursos & Indicadores de salida \\
+$N_{\mathrm{atendidos}}$ & Grupos y personas atendidas & Indicadores de salida \\
+$N_{\mathrm{aband}}$ & Grupos que abandonan por espera & Indicador de salida \\
+\bottomrule\end{tabularx}\end{table*}
+
+Fuente: solicitudes de ejecución conservadas en los JSON que respaldan los tres CSV. Estos parámetros se mantuvieron constantes entre escenarios; las variaciones experimentales se aplicaron a M, S y C.
+
+Con siete horas de demanda normal y cuatro de demanda pico, el número esperado de llegadas fue de 7 \(\times\) 8 + 4 \(\times\) 20 = 136 grupos por jornada. Este valor esperado se distinguió de los conteos aleatorios obtenidos en cada réplica.
+
+\subsubsection*{Etapa 5. Formulación de los modelos matemáticos}
+
+Las llegadas se representaron mediante un proceso de Poisson por tramos, con tasa \(\lambda\)(t)=20 grupos/hora durante los dos intervalos pico y \(\lambda\)(t)=8 en los demás periodos de admisión. En cada franja se generaron intervalos exponenciales con media 60/\(\lambda\)(t), en minutos. Esta conversión evitó mezclar tasas horarias con tiempos de actividad expresados en minutos.
+
+La utilización se definió como el tiempo ocupado acumulado dividido entre la capacidad disponible durante la observación. Las esperas se obtuvieron por diferencia entre solicitud y adquisición del recurso. La permanencia de cada grupo atendido se calculó como salida menos llegada. El abandono correspondió a la proporción de grupos que agotaron su paciencia antes de obtener mesa.
+
+Para completar la formulación del instrumento se incorporó en la versión 1.1.0 la longitud promedio de cada cola mediante integración temporal de sus eventos. También se incorporó el contraste de Little \cite{ref1}, manteniendo iguales población, ventana y unidades en ambos lados de la relación. Estos cálculos no se atribuyeron retrospectivamente a los CSV de la versión 1.0.0, que no los contienen.
+
+\begin{equation}
+\lambda(t)=\begin{cases}20,&12\leq t<14\ \text{o}\ 18\leq t<20,\\8,&\text{en el resto de la admisión}.\end{cases}
+\end{equation}
+
+El tiempo de observación T se midió en minutos, desde la apertura hasta finalizar los servicios admitidos. Para cada recurso r, c\textsubscript{r} representó su capacidad y T ocupado la suma de los tiempos de actividad de todos sus servidores.
+
+\begin{equation}
+U_r=\frac{T_{\mathrm{ocupado},r}}{c_r T}\,100\%
+\end{equation}
+
+\begin{equation}
+\overline W_{q,i}=\frac{1}{n_i}\sum_{k=1}^{n_i}W_{q,i,k}
+\end{equation}
+
+En la expresión anterior, la suma abarcó los n\textsubscript{i} registros de espera de la estación i. La longitud media de la cola se calculó integrando la cantidad Q\textsubscript{i}(t) de grupos pendientes; para una trayectoria por eventos, la integral equivale a sumar Q\textsubscript{i} por la duración de cada intervalo.
+
+\begin{equation}
+\overline L_{q,i}=\frac{1}{T}\int_0^T Q_i(t)\,\mathrm dt
+\end{equation}
+
+\begin{equation}
+W_{\mathrm{total},k}=t_{\mathrm{salida},k}-t_{\mathrm{llegada},k}
+\end{equation}
+
+\begin{equation}
+P_{\mathrm{aband}}=\frac{N_{\mathrm{aband}}}{N_{\mathrm{llegadas}}}\,100\%
+\end{equation}
+
+La permanencia media consideró solamente los grupos que completaron el servicio. El porcentaje de abandono utilizó todos los grupos llegados como denominador. Para contrastar la ley de Little se emplearon grupos por minuto, minutos y número medio de grupos, con población y ventana compatibles \cite{ref1}.
+
+\begin{equation}
+L=\lambda_{\mathrm{ef}}W
+\end{equation}
+
+La longitud media de cola y el contraste de Little pertenecen a la ampliación 1.1.0; las comparaciones de los experimentos históricos se limitaron a los indicadores efectivamente registrados en la versión 1.0.0.
+
+\subsubsection*{Etapa 6. Implementación computacional}
+
+Se implementó un sistema modular con contratos de configuración, motor SimPy, análisis de resultados, persistencia y API. La interfaz permitió modificar parámetros, ejecutar escenarios, reproducir eventos y consultar indicadores. La lógica de simulación permaneció en Python y separada de su presentación visual.
+
+El motor registró las llegadas, asignaciones, actividades, abandonos y salidas. Se verificaron la exclusión de mesas, la adquisición simultánea de dos mesas por grupos grandes, la capacidad del personal y la liberación de mesas después del cobro. Cada ejecución conservó configuración y semilla, lo que permitió rastrear sus resultados. Los tres lotes históricos analizados identifican la versión 1.0.0 del modelo.
+
+\subsubsection*{Etapa 7. Ejecución de los experimentos}
+
+Se analizaron tres lotes, denominados E1, E2 y E3 según el archivo de procedencia. Cada combinación de recursos se ejecutó mediante réplicas con semillas independientes entre sí, reutilizadas entre escenarios para conservar condiciones equivalentes de demanda.
+
+\begin{table*}[!tb]\centering\small
+\caption{Diseño de los experimentos por fuerza bruta}
+\label{tab:3}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYYYYYY}
+\toprule
+\textbf{Lote y archivo} & \textbf{Mesas evaluadas} & \textbf{Meseros} & \textbf{Cocineras} & \textbf{Combinaciones} & \textbf{Réplicas por combinación} & \textbf{Corridas contabilizadas} \\
+\midrule
+E1: experimento.csv & 9, 11 y 13 & 1 a 7 & 1 a 7 & 147 & 4 & 588 \\
+E2: experimento(1).csv & 9 a 13, paso 1 & 1 a 3 & 2 a 4 & 45 & 5 & 225 \\
+E3: experimento(2).csv & 9 a 13, paso 1 & 1 a 3 & 2 a 7 & 90 & 5 & 450 \\
+\bottomrule\end{tabularx}\end{table*}
+
+En E1 se solicitó un rango de mesas entre 9 y 14 con paso 2, que generó únicamente 9, 11 y 13 mesas. La configuración de 14 mesas no fue evaluada. El total de los archivos fue de 282 filas y 1263 corridas contabilizadas por lote, correspondientes a 183 combinaciones distintas. Estas cantidades no representan observaciones independientes acumulables, porque E2 está incluido en E3 y existen escenarios y semillas compartidos con E1.
+
+La semilla principal fue 42. Las semillas de réplica fueron 2684470948, 4091952314, 233227757 y 3276785861 en E1. E2 y E3 utilizaron esas cuatro y una quinta, 3644269654. Para la comparación detallada se empleó E3, que reúne cinco réplicas y el mayor intervalo de cocineras dentro de la rejilla de uno a tres meseros.
+
+\subsubsection*{Etapa 8. Recolección de resultados}
+
+Se recopilaron las medias y los límites de confianza de los indicadores exportados en los CSV. Se identificó el JSON de respaldo de cada archivo y se comprobó la correspondencia de sus 66 columnas con los resúmenes almacenados. Asimismo, se revisó por réplica que los grupos llegados fueran iguales a atendidos más abandonados, y que se cumpliera el mismo balance para las personas.
+
+Se conservaron separados los lotes de cuatro y cinco réplicas. Los 45 escenarios compartidos por E2 y E3 presentaron las mismas métricas. Para los 54 escenarios comunes entre E1 y E3, las primeras cuatro réplicas también coincidieron. Por ello, las exportaciones compartidas no se trataron como nuevas confirmaciones independientes.
+
+\subsubsection*{Etapa 9. Representación gráfica de los datos}
+
+Los resultados se organizaron en tablas comparativas y tres gráficos: permanencia media de configuraciones seleccionadas, variación de la permanencia al aumentar cocineras y utilización por tipo de recurso. Se identificaron en cada figura el lote, número de réplicas, unidades y configuración M/S/C.
+
+Los gráficos se elaboraron a partir de las medias de E3. Los intervalos de confianza se presentaron en tablas para diferenciar el comportamiento observado de su incertidumbre. La representación permitió examinar simultáneamente el efecto de la capacidad adicional y el grado de ocupación de los recursos.
+
+\subsubsection*{Etapa 10. Comparación y análisis de los resultados}
+
+Se comparó la configuración 11/1/3 con alternativas que modificaron únicamente mesas, únicamente meseros o varios recursos. Se identificó el menor tiempo de permanencia observado en cada lote y se examinó por separado la etiqueta de eficiencia de Pareto generada por el programa.
+
+Para algunas comparaciones de E3 se calcularon diferencias pareadas entre las cinco réplicas archivadas. Este procesamiento posterior permitió evaluar cambios respecto de la referencia usando las mismas semillas. No se ejecutaron nuevas simulaciones para producir las tablas y figuras de este análisis. Los resultados se interpretaron dentro de la rejilla y de los supuestos sintéticos considerados.
+
+\subsection{Evaluación}
+
+La evaluación se vinculó con los dos objetivos específicos. Para el primero se comprobó la representación de las reglas operativas y la coherencia del instrumento. Para el segundo se compararon los indicadores de los escenarios y la dotación requerida para obtenerlos.
+
+\subsubsection*{Criterios asociados con el objetivo específico 1}
+
+Se revisaron la secuencia de servicio, el respeto de las capacidades, la exclusión de mesas y personal, la adquisición atómica de dos mesas, la cancelación de solicitudes por abandono y el cierre de llegadas a las 20:00. También se consideró la conservación de parámetros y semillas para reproducir ejecuciones.
+
+Se distinguió la verificación computacional de la validación empírica conforme a Sargent \cite{ref3}. Las pruebas de reglas e identidades permiten revisar la coherencia del programa. Como las entradas fueron sintéticas y no se contrastaron con observaciones de un establecimiento, no se afirmó validación empírica del restaurante.
+
+\subsubsection*{Métricas asociadas con el objetivo específico 2}
+
+\begin{table*}[!tb]\centering\small
+\caption{Indicadores, unidades y criterio de interpretación}
+\label{tab:4}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYY}
+\toprule
+\textbf{Indicador} & \textbf{Definición utilizada} & \textbf{Unidad y criterio} \\
+\midrule
+Permanencia media de atendidos & Promedio de salida menos llegada entre los grupos que completan el servicio & Minutos; menor es favorable, interpretándolo junto con atención y abandono \\
+Espera media por mesa & Espera hasta asignación o abandono, promediada sobre todos los grupos llegados & Minutos; menor es favorable, pero no equivale a la permanencia \\
+Esperas por actividad & Promedio del tiempo hasta recibir pedido, preparación, entrega o cobro entre atendidos & Minutos; permiten localizar la congestión \\
+Abandono & 100 \(\times\) grupos abandonados / grupos llegados, calculado por réplica y luego promediado & Porcentaje; menor es favorable \\
+Atención completada & Grupos y personas que finalizan el pago & Grupos/jornada y personas/jornada; mayor es favorable bajo la misma demanda \\
+Utilización & 100 \(\times\) tiempo ocupado acumulado / capacidad-tiempo disponible & Porcentaje; se interpreta con las esperas, sin asumir que el máximo sea lo deseable \\
+Dotación & Cantidades M, S y C evaluadas & Recursos por tipo; una ampliación debe relacionarse con la mejora conseguida \\
+Longitud media de cola & Área temporal de Q(t) dividida entre T & Grupos; implementada en la versión actual, sin resultados exportados en los tres CSV históricos \\
+\bottomrule\end{tabularx}\end{table*}
+
+El periodo de observación comprendió desde la apertura hasta finalizar los grupos admitidos. Por ello, la utilización incluyó la atención posterior al cierre. Los valores fraccionarios de personas o grupos en las tablas representan medias entre jornadas simuladas, no entidades fraccionadas en una ejecución.
+
+La permanencia se calculó solamente entre atendidos, mientras que la espera por mesa incluyó abandonos. Estas poblaciones se mantuvieron diferenciadas. Tampoco se reemplazó la media de tasas de abandono por el cociente de los conteos medios, porque ambas operaciones pueden producir resultados distintos.
+
+\subsubsection*{Incertidumbre y comparación de escenarios}
+
+Para cada indicador se utilizó la media entre réplicas y un intervalo t de Student bilateral del 95 \%:
+
+\begin{equation}
+\overline x\ \pm\ t_{0.975,n-1}\frac{s}{\sqrt n}
+\end{equation}
+
+En las comparaciones pareadas se calculó, para cada semilla, la diferencia entre la alternativa y la referencia. Posteriormente se estimó su media e intervalo mediante la misma expresión. Una diferencia negativa de permanencia representó una reducción. Los intervalos de diferencias se interpretaron como exploratorios: se utilizaron pocas réplicas y no se aplicó ajuste por haber examinado numerosas configuraciones.
+
+El mínimo observado entre muchas alternativas puede estar favorecido por variabilidad muestral. Por tanto, no se consideró suficiente una diferencia pequeña entre medias para afirmar una ventaja generalizable ni se utilizaron los resultados compartidos entre archivos como réplicas adicionales.
+
+\subsubsection*{Eficiencia y criterio de selección}
+
+El criterio de Pareto aplicado por el programa minimizó simultáneamente cinco componentes:
+
+\begin{equation}
+\left(M,S,C,\overline P_{\mathrm{aband}},\overline W_{\mathrm{mesa}}\right)
+\end{equation}
+
+Una configuración se consideró dominada cuando otra no empeoró ninguno de esos componentes y mejoró al menos uno. La permanencia media se examinó adicionalmente para responder al interés del informe por reducir el tiempo total, pero no forma parte de la etiqueta eficiente de estos archivos.
+
+Se distinguieron, en consecuencia, el escenario de menor permanencia observada y las alternativas eficientes por dotación, abandono y espera. No se definió una suma monetaria de recursos ni una ponderación arbitraria entre tipos de personal. Al no disponer de costos ni de límites de servicio aprobados, no se declaró una única configuración económicamente óptima o universalmente ideal.
+
+\section{RESULTADOS}
+
+Los resultados se presentan según los dos objetivos específicos. La notación M/S/C indica mesas, meseros y cocineras. Excepto donde se identifica otro lote, las comparaciones numéricas corresponden a E3 y sus cinco réplicas.
+
+\subsection{Resultados del objetivo específico 1}
+
+Objetivo: implementar un modelo computacional de red de colas en Python que represente las etapas del servicio del restaurante e integre llegadas, tiempos y capacidades.
+
+Se obtuvo un simulador modular que representó el recorrido completo de los grupos, la ocupación de mesas hasta el pago y la competencia por personal compartido. El modelo permitió variar las cantidades de mesas, meseros y cocineras mediante configuraciones, sin modificar sus procesos de servicio.
+
+\begin{table*}[!tb]\centering\small
+\caption{Productos obtenidos para el primer objetivo}
+\label{tab:5}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YY}
+\toprule
+\textbf{Componente} & \textbf{Resultado verificable} \\
+\midrule
+Contratos y configuración & Parámetros tipados, distribuciones configurables y validación centralizada \\
+Motor de eventos discretos & Llegadas por franja, formación de grupos, asignación compatible, abandono y servicio completo \\
+Gestión de recursos & Dos mesas adquiridas conjuntamente para grupos grandes; meseros compartidos; cocina por pedido grupal \\
+Registro experimental & Configuración, versión, semilla y métricas por réplica conservadas en archivos \\
+Instrumento de análisis & Resúmenes estadísticos, comparación de escenarios y clasificación de Pareto \\
+Interfaz & Edición de escenarios, reproducción de eventos, gráficos y exportación \\
+Ampliación posterior 1.1.0 & Integración temporal de cinco colas y contraste de Little con poblaciones compatibles \\
+\bottomrule\end{tabularx}\end{table*}
+
+Los JSON permitieron identificar inequívocamente el respaldo de los tres CSV y comprobar los balances de grupos y personas en sus réplicas. Esta trazabilidad constituyó un resultado del instrumento y permitió separar diferencias de parametrización, cantidad de réplicas y capacidad.
+
+Los experimentos históricos correspondieron a la versión 1.0.0. Sus archivos no contienen valores numéricos de longitud media de cola ni contrastes de Little. La implementación actual incorpora estas funciones, pero el presente análisis no presenta valores históricos que no fueron exportados ni sustituye esos faltantes por una simulación distinta. Para completar la evaluación experimental de esas dos dimensiones se requiere repetir o ampliar las exportaciones con la versión que las registra.
+
+\subsection{Resultados del objetivo específico 2}
+
+Objetivo: evaluar combinaciones de recursos mediante simulación y métricas de rendimiento para identificar alternativas eficientes dentro de las condiciones estudiadas.
+
+\subsubsection*{Cobertura de la búsqueda}
+
+Los lotes produjeron 147, 45 y 90 escenarios, respectivamente. Tras identificar los solapamientos, se contabilizaron 183 combinaciones distintas. La clasificación incluida en los archivos identificó 75 alternativas no dominadas en E1, 45 en E2 y 71 en E3, siempre respecto del conjunto y los cinco objetivos de cada lote.
+
+\begin{table*}[!tb]\centering\small
+\caption{Menor permanencia observada en cada lote}
+\label{tab:6}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYYY}
+\toprule
+\textbf{Lote} & \textbf{Configuración M/S/C} & \textbf{Permanencia media de atendidos (min)} & \textbf{Interpretación} \\
+\midrule
+E1, cuatro réplicas & 13/6/7 y 13/7/7 & 44,43 & Empate en la media mínima; ambas figuran como dominadas bajo el criterio de Pareto del programa \\
+E2, cinco réplicas & 10/3/4 & 45,65 & Menor permanencia de su rejilla; no es el escenario de menor abandono de E2 \\
+E3, cinco réplicas & 13/3/6 & 44,65 & Menor permanencia de E3 y alternativa no dominada en ese lote \\
+\bottomrule\end{tabularx}\end{table*}
+
+E1 registró 140,50 grupos y 361,50 personas llegadas por jornada como medias de cuatro réplicas. E2 y E3 registraron 135,60 grupos y 347,80 personas como medias de cinco. La diferencia se explica por la incorporación de la quinta semilla; las cuatro primeras realizaciones compartidas fueron idénticas. Estos mínimos no se compararon como si procedieran de tres muestras independientes con el mismo tamaño.
+
+\subsubsection*{Comparación con la configuración de referencia}
+
+\begin{table*}[!tb]\centering\small
+\caption{Desempeño de configuraciones seleccionadas de E3}
+\label{tab:7}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYYYYY}
+\toprule
+\textbf{M/S/C} & \textbf{Permanencia (min)} & \textbf{Espera por mesa, todos los grupos (min)} & \textbf{Abandono (\%)} & \textbf{Grupos atendidos/jornada} & \textbf{Personas atendidas/jornada} \\
+\midrule
+11/1/3 & 62,69 & 4,27 & 31,45 & 92,60 & 225,40 \\
+13/1/3 & 68,57 & 3,80 & 28,87 & 96,20 & 236,40 \\
+11/2/3 & 49,14 & 2,90 & 19,73 & 108,60 & 270,40 \\
+11/3/3 & 48,19 & 2,77 & 19,14 & 109,40 & 272,60 \\
+13/2/4 & 47,27 & 1,96 & 11,63 & 119,60 & 297,40 \\
+13/3/4 & 45,92 & 1,77 & 10,62 & 121,00 & 302,60 \\
+13/3/5 & 44,85 & 1,62 & 9,72 & 122,20 & 307,20 \\
+13/3/6 & 44,65 & 1,58 & 9,56 & 122,40 & 308,20 \\
+13/3/7 & 44,66 & 1,60 & 9,43 & 122,60 & 308,00 \\
+\bottomrule\end{tabularx}\end{table*}
+
+Fuente: experimento(2).csv. Todos los valores son medias de cinco réplicas. Las configuraciones seleccionadas de esta tabla figuran como eficientes según el criterio del programa.
+
+La ampliación exclusiva de mesas, de 11/1/3 a 13/1/3, redujo el abandono en 2,58 puntos porcentuales y elevó la atención en 11 personas por jornada, pero incrementó la permanencia media en 5,88 minutos. En cambio, incorporar un segundo mesero manteniendo 11 mesas y tres cocineras redujo la permanencia en 13,55 minutos y elevó la atención en 45 personas por jornada.
+
+Frente a 11/1/3, la alternativa 13/3/6 redujo la permanencia media en 18,03 minutos, equivalentes al 28,77 \%. La espera media por mesa disminuyó un 62,95 \% y el abandono pasó de 31,45 \% a 9,56 \%, una disminución de 21,89 puntos porcentuales. Las personas atendidas aumentaron de 225,40 a 308,20 por jornada, un 36,73 \%.
+
+
+\begin{figure*}[!tb]\centering
+\begin{tikzpicture}
+\begin{axis}[informe,xlabel={Configuración: mesas/meseros/cocineras},ymin=0,symbolic x coords={11/1/3,13/2/4,13/3/5,13/3/6,13/3/7},xtick=data,ybar,bar width=23pt,ymax=80,ylabel={Permanencia (minutos)},nodes near coords,point meta=y,every node near coord/.append style={font=\scriptsize},]
+\addplot[fill=verde,draw=verde] coordinates {(11/1/3,62.686483) (13/2/4,47.274117) (13/3/5,44.845552) (13/3/6,44.654186) (13/3/7,44.659156)};
+\end{axis}
+\end{tikzpicture}
+\caption{Permanencia media de los grupos atendidos en configuraciones seleccionadas de E3. Medias de cinco réplicas con semillas comunes; datos sintéticos. Los intervalos se presentan en las tablas de resultados.}
+\label{fig:1}
+\end{figure*}
+
+\begin{table*}[!tb]\centering\small
+\caption{Permanencia e intervalos t del 95 \% de E3}
+\label{tab:8}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYY}
+\toprule
+\textbf{M/S/C} & \textbf{Media (min)} & \textbf{IC 95 \% de la media (min)} \\
+\midrule
+11/1/3 & 62,69 & [60,65; 64,73] \\
+11/2/3 & 49,14 & [48,15; 50,13] \\
+13/2/4 & 47,27 & [46,15; 48,39] \\
+13/3/5 & 44,85 & [43,92; 45,77] \\
+13/3/6 & 44,65 & [43,64; 45,67] \\
+13/3/7 & 44,66 & [43,55; 45,76] \\
+\bottomrule\end{tabularx}\end{table*}
+
+\subsubsection*{Utilización y localización de las esperas}
+
+\begin{table*}[!tb]\centering\small
+\caption{Utilización media de recursos en E3}
+\label{tab:9}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYYY}
+\toprule
+\textbf{M/S/C} & \textbf{Mesas (\%)} & \textbf{Meseros (\%)} & \textbf{Cocineras (\%)} \\
+\midrule
+11/1/3 & 76,05 & 84,48 & 57,46 \\
+11/2/3 & 71,52 & 49,74 & 67,83 \\
+13/2/4 & 65,69 & 55,17 & 56,39 \\
+13/3/5 & 64,35 & 37,64 & 46,17 \\
+13/3/6 & 64,16 & 37,77 & 38,53 \\
+\bottomrule\end{tabularx}\end{table*}
+
+El recurso mesero registró la mayor utilización de la referencia. Al pasar a dos meseros, la utilización media de ese personal descendió de 84,48 \% a 49,74 \%, mientras que la de cocina aumentó de 57,46 \% a 67,83 \%. El mayor número de grupos atendidos incrementó, por tanto, la carga que alcanzó la cocina.
+
+\begin{table*}[!tb]\centering\small
+\caption{Esperas medias por actividad entre grupos atendidos en E3}
+\label{tab:10}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYYYYY}
+\toprule
+\textbf{M/S/C} & \textbf{Mesa (min)} & \textbf{Pedido (min)} & \textbf{Preparación (min)} & \textbf{Entrega (min)} & \textbf{Cobro (min)} \\
+\midrule
+11/1/3 & 2,94 & 5,30 & 0,40 & 5,80 & 5,04 \\
+11/2/3 & 2,07 & 0,41 & 2,72 & 0,39 & 0,40 \\
+13/3/6 & 1,17 & 0,10 & 0,07 & 0,10 & 0,09 \\
+\bottomrule\end{tabularx}\end{table*}
+
+En esta tabla la espera por mesa corresponde únicamente a atendidos, a diferencia de la tabla VII. La preparación expresa espera antes de acceder a cocina, no duración de preparación. Estas distinciones evitan sumar indicadores de poblaciones diferentes o confundir cola con servicio.
+
+
+\begin{figure*}[!tb]\centering
+\begin{tikzpicture}
+\begin{axis}[informe,xlabel={Cantidad de cocineras},ylabel={Permanencia (minutos)},xmin=3,xmax=7,xtick={3,4,5,6,7},ymin=40,ymax=55,nodes near coords,every node near coord/.append style={font=\scriptsize}]
+\addplot[verde,thick,mark=*] coordinates {(3,50.805454) (4,45.916170) (5,44.845552) (6,44.654186) (7,44.659156)};
+\end{axis}
+\end{tikzpicture}
+\caption{Efecto de ampliar cocina con 13 mesas y tres meseros. El eje vertical comienza en 40 minutos para mostrar las diferencias. Fuente: E3, cinco réplicas por configuración.}
+\label{fig:2}
+\end{figure*}
+
+\subsubsection*{Rendimientos marginales y comparación pareada}
+
+Con 13 mesas y tres meseros, aumentar cocina de tres a cuatro recursos redujo la permanencia de 50,81 a 45,92 minutos. La reducción de cinco a seis cocineras fue de 0,191 minutos, aproximadamente 11,48 segundos. De seis a siete, la media pasó de 44,654 a 44,659 minutos, sin una mejora observada de permanencia.
+
+
+\begin{figure*}[!tb]\centering
+\begin{tikzpicture}
+\begin{axis}[informe,xlabel={Configuración: mesas/meseros/cocineras},ymin=0,symbolic x coords={11/1/3,13/2/4,13/3/5,13/3/6},xtick=data,ybar,bar width=12pt,ymax=100,ylabel={Utilización (\%)},]
+\addplot[fill=verde,draw=verde] coordinates {(11/1/3,76.050626) (13/2/4,65.690050) (13/3/5,64.347742) (13/3/6,64.164991)};
+\addplot[fill=azul,draw=azul] coordinates {(11/1/3,84.475717) (13/2/4,55.172327) (13/3/5,37.644825) (13/3/6,37.772299)};
+\addplot[fill=naranja,draw=naranja] coordinates {(11/1/3,57.456098) (13/2/4,56.387015) (13/3/5,46.170338) (13/3/6,38.531337)};
+\legend{Mesas,Meseros,Cocineras}
+\end{axis}
+\end{tikzpicture}
+\caption{Utilización media por recurso durante la jornada completa, incluida la atención posterior al cierre. Fuente: E3, cinco réplicas por configuración; datos sintéticos.}
+\label{fig:3}
+\end{figure*}
+
+\begin{table*}[!tb]\centering\small
+\caption{Diferencias pareadas de permanencia en E3}
+\label{tab:11}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.18}
+\begin{tabularx}{\textwidth}{YYY}
+\toprule
+\textbf{Cambio evaluado} & \textbf{Diferencia media: alternativa - referencia (min)} & \textbf{IC 95 \% de la diferencia (min)} \\
+\midrule
+11/1/3 a 13/1/3 & +5,880 & [3,172; 8,588] \\
+11/1/3 a 11/2/3 & -13,545 & [-15,298; -11,793] \\
+11/1/3 a 13/3/6 & -18,032 & [-19,867; -16,198] \\
+13/3/5 a 13/3/6 & -0,191 & [-0,354; -0,029] \\
+13/3/6 a 13/3/7 & +0,005 & [-0,155; 0,165] \\
+\bottomrule\end{tabularx}\end{table*}
+
+Fuente: cálculo posterior sobre las cinco réplicas archivadas de E3, emparejadas por semilla. Son intervalos nominales, exploratorios y sin ajuste por selección entre múltiples escenarios.
+
+La comparación de cinco a seis cocineras produjo un intervalo de permanencia enteramente negativo, aunque la magnitud de la reducción fue pequeña. Para ese mismo cambio, el incremento de personas atendidas fue de una persona por jornada, con IC 95 \% [-1,15; 3,15]. El cambio de seis a siete no permitió establecer una reducción de permanencia a partir de estas réplicas. Se evidenció así la necesidad de diferenciar una variación estadística de su importancia operativa.
+
+En E3, 13/3/6 constituye la candidata si se prioriza la menor permanencia media observada. La configuración 13/3/5 ofrece una media cercana con una cocinera menos. La alternativa 13/2/4 utiliza un mesero y dos cocineras menos que 13/3/6, con una permanencia 2,62 minutos mayor. Elegir entre ellas exige precisar prioridades de servicio y restricciones de dotación que no se encuentran cuantificadas en los datos entregados.
+
+\section{DISCUSIÓN}
+
+\subsection{Interdependencia de la capacidad}
+
+El incremento de mesas redujo los rechazos por espera, pero empeoró la permanencia cuando se mantuvo un solo mesero. Este resultado muestra que admitir más grupos puede aumentar la carga de las actividades compartidas. La red de servicio debe analizarse de manera conjunta, en consonancia con Dey et al. \cite{ref2}, quienes estudiaron el dimensionamiento de estaciones de una red de colas. La diferencia es que dicho antecedente incorporó costos y modelos analíticos, mientras que este trabajo utilizó eventos discretos, abandono y datos sintéticos. La implicación operativa es que una ampliación de mesas requiere revisar también la capacidad de atención y preparación.
+
+\subsection{Disponibilidad de mesas y grupos atendidos}
+
+Las configuraciones de mayor capacidad de mesas permitieron atender más personas cuando se acompañaron de personal suficiente. Este comportamiento es coherente con la importancia que Kimes y Thompson \cite{ref4} atribuyen a la capacidad y composición de mesas. Sin embargo, su estudio examinó una mezcla de tamaños y datos de un restaurante real, mientras que aquí todas las mesas tuvieron cuatro puestos y los grupos grandes adquirieron dos. Por ello, no corresponde equiparar porcentajes de mejora ni inferir aumentos de ingresos. El aporte del presente modelo es mostrar la relación entre disponibilidad de mesas, retención de grupos y carga del personal bajo esas reglas concretas.
+
+\subsection{Meseros como recurso compartido}
+
+La referencia presentó esperas elevadas para pedido, entrega y cobro, junto con una utilización del mesero de 84,48 \%. Añadir un segundo mesero redujo esas esperas y elevó la carga de cocina. Buzali et al. \cite{ref8} también identificaron la necesidad de localizar el punto de congestión antes de modificar la dotación de servicio y preparación. La coincidencia es metodológica: en ambos casos se evalúa qué recurso limita el flujo. Las actividades y entidades de una cafetería difieren de las de este restaurante, por lo que no se trasladan sus cantidades óptimas ni sus porcentajes al presente caso. La implicación es priorizar cambios en el recurso que acumula demoras y comprobar su efecto sobre las estaciones siguientes.
+
+\subsection{Rendimientos decrecientes al ampliar cocina}
+
+La reducción de permanencia se hizo menor al pasar de cinco a seis cocineras y no mejoró al incorporar una séptima. También disminuyó la utilización media de cocina, de 46,17 \% en 13/3/5 a 38,53 \% en 13/3/6. Esta evidencia indica que aumentar capacidad puede dejar disponibilidad sin aprovechar una vez que otras actividades, el consumo y la admisión condicionan el tiempo total. La selección no puede basarse exclusivamente en incrementar servidores. Tampoco permite afirmar que seis cocineras sean económicamente convenientes: la mejora marginal de 11,48 segundos debe valorarse frente a restricciones de dotación o costos que no fueron incluidos.
+
+\subsection{Comparación de indicadores con investigaciones anteriores}
+
+Samad et al. \cite{ref9} analizaron conjuntamente esperas y utilización para identificar desequilibrios en un restaurante. En este trabajo se observó que una utilización elevada del personal de sala coexistió con demoras en varias actividades, y que su ampliación redistribuyó la carga hacia cocina. Esta coincidencia respalda la lectura conjunta de indicadores. Las magnitudes absolutas de espera no se consideran directamente comparables, porque cambian las actividades, las poblaciones observadas y la duración de los estudios. En particular, la espera por mesa de este modelo no equivale a la espera total o por servidor de otras investigaciones.
+
+\subsection{Alcance de la evidencia y aporte del modelo}
+
+Herrera-Barbas et al. \cite{ref10} apoyaron su modelo en observaciones de llegadas y servicio. El presente trabajo se diferencia por utilizar parámetros sintéticos, lo que facilita experimentar de forma controlada, pero limita la transferencia de las cantidades encontradas a un establecimiento real. Conforme a Sargent \cite{ref3}, comprobar el programa y sus balances es distinto de demostrar exactitud para una aplicación concreta. Por tanto, la evidencia respalda el funcionamiento del instrumento y las comparaciones internas realizadas, mientras que la aplicación operativa requiere medición y calibración.
+
+La ampliación matemática del programa permite registrar colas y contrastar Little \cite{ref1} en una jornada con cohortes completas. No obstante, esa mejora no sustituye las métricas ausentes de los archivos históricos. Además, la coincidencia de Little representa una comprobación de balance de población y tiempos, y no demuestra por sí sola un régimen estacionario ni las condiciones M/M/s.
+
+El aporte del trabajo es una implementación reproducible que integra mesas adquiridas conjuntamente, abandono y personal compartido, junto con una búsqueda exhaustiva verificable de recursos. El análisis de las exportaciones añade trazabilidad al reconocer escenarios repetidos y semillas compartidas, evitando presentar archivos solapados como evidencia independiente.
+
+\subsection{Límites de la selección de una configuración ideal}
+
+Las diferencias entre el mínimo de permanencia y la etiqueta de Pareto se explican porque optimizan criterios diferentes. En E1, las configuraciones 13/6/7 y 13/7/7 alcanzaron la menor permanencia, pero fueron dominadas respecto de dotación, abandono y espera por mesa. El software no incluyó la permanencia en esa etiqueta. Por tanto, no existe contradicción numérica: existe una diferencia de función objetivo que debe quedar explícita.
+
+El número reducido de réplicas, la selección entre muchas alternativas y la falta de umbrales aprobados limitan una elección definitiva. E2 no constituye una validación independiente de E3 y sus resultados no deben duplicarse para aumentar artificialmente la evidencia. La configuración 13/3/6 se identifica como la de menor permanencia observada en E3, con alternativas de menor dotación que deben mantenerse disponibles para una decisión posterior.
+
+\section{CONCLUSIONES}
+
+1. Respecto del primer objetivo específico, se implementó un modelo computacional modular en Python y SimPy que representa las etapas del restaurante, las llegadas por horario, las mesas ocupadas hasta el pago, el abandono y la atención con recursos compartidos. El almacenamiento de configuración, versión y semillas permitió identificar y revisar los tres experimentos analizados.
+
+2. Respecto del segundo objetivo específico, se examinaron tres rejillas por fuerza bruta que reúnen 183 combinaciones distintas. Se identificaron alternativas eficientes y mínimos de permanencia dentro de cada lote. La interpretación consideró que E2 está incluido en E3 y que los lotes comparten realizaciones aleatorias, por lo que las 282 filas no constituyen escenarios independientes.
+
+3. La configuración de referencia 11/1/3 presentó limitaciones en la atención compartida de sala. Añadir un segundo mesero redujo su permanencia media de 62,69 a 49,14 minutos y elevó las personas atendidas de 225,40 a 270,40 por jornada. En cambio, ampliar únicamente mesas a 13 aumentó la permanencia a 68,57 minutos. El dimensionamiento debe considerar conjuntamente las estaciones del servicio.
+
+4. En E3, la configuración 13/3/6 obtuvo la menor permanencia media observada, de 44,65 minutos. Frente a la referencia redujo ese indicador un 28,77 \%, disminuyó el abandono en 21,89 puntos porcentuales y aumentó las personas atendidas un 36,73 \%. Estos resultados describen el lote de cinco réplicas y sus parámetros sintéticos, sin establecer un óptimo universal.
+
+5. La mejora al pasar de cinco a seis cocineras fue de aproximadamente 11,48 segundos de permanencia, y una séptima no produjo una reducción observada de ese indicador. La alternativa 13/3/5 y otras de menor dotación permanecen relevantes para una decisión que incorpore prioridades operativas. La ausencia de costos y umbrales de servicio impide seleccionar una única combinación económicamente ideal.
+
+6. La versión actual del instrumento incorpora longitudes de cola y contrastes de Little, pero los tres archivos históricos no exportaron estas medidas. Por ello, el análisis experimental quedó sustentado en esperas, permanencia, atención, abandono y utilización disponibles. La validación empírica y la evaluación numérica histórica de longitudes de cola requieren información adicional.
+
+\section{RECOMENDACIONES}
+
+1. Unificar los parámetros del informe con las ejecuciones utilizadas. Documentar las llegadas pico de 20 grupos/hora, paciencia U(0,20) y distribuciones efectivas de servicio. Si se desea estudiar el caso de 25 grupos/hora y paciencia máxima de 40 minutos, realizar y presentar un experimento distinto, sin atribuirle los resultados actuales.
+
+2. Definir el criterio de decisión antes de una nueva búsqueda. Establecer, con el responsable del restaurante, límites aceptables de permanencia y abandono, atención mínima y restricciones de personal. Mantener separados el mínimo de permanencia, la eficiencia de Pareto y una eventual evaluación económica.
+
+3. Confirmar las configuraciones finalistas con nuevas semillas. Comparar al menos 11/2/3, 13/2/4, 13/3/5 y 13/3/6 mediante un conjunto adicional no utilizado para seleccionarlas. Determinar el número de réplicas a partir de una precisión o amplitud de intervalo deseada, en lugar de fijar una cantidad sin justificación.
+
+4. Completar la medición de colas con la versión que las registra. Repetir las configuraciones de interés con exportación de eventos, áreas temporales, longitudes promedio y contrastes de Little. Conservar la versión del modelo para distinguir resultados históricos y ampliaciones del instrumento.
+
+5. Medir y calibrar antes de aplicar la dotación al sistema real. Recoger llegadas por franja, tamaños de grupos, tiempos de actividad y paciencia. Contrastar distribuciones e indicadores con observaciones del establecimiento, siguiendo el propósito de validación señalado por Sargent \cite{ref3}.
+
+6. Evaluar primero el equilibrio entre sala y cocina. Los resultados sugieren revisar la capacidad compartida de los meseros antes de ampliar mesas de forma aislada. Cada cambio debe acompañarse de una nueva medición de la carga de cocina y de la atención completada.
+
+7. Incorporar costos y variantes operativas en trabajos posteriores. Si se desea recomendar una dotación económicamente conveniente, incluir costos diferenciados de mesas y personal. También pueden estudiarse turnos por horario, otras capacidades de mesa y sensibilidad de demanda y paciencia, conservando las condiciones de comparación.
+
+8. Preservar la trazabilidad y evitar duplicaciones. Archivar CSV y JSON con su semilla, réplicas, rangos y configuración. Identificar los escenarios mediante el archivo y la combinación M/S/C, porque el número de escenario cambia entre lotes. No combinar resultados solapados como si fueran observaciones nuevas.
+
+\begin{thebibliography}{10}
+\bibitem{ref1} J. D. C. Little, “A proof for the queuing formula: L = \(\lambda\)W,” Operations Research, vol. 9, no. 3, pp. 383–387, 1961, doi: \href{https://doi.org/10.1287/opre.9.3.383}{10.1287/opre.9.3.383}.
+
+\bibitem{ref2} S. Dey, F. Islam, and A. S. Raihan, “An optimization model through designing a queuing network for a restaurant: A case study,” in Proc. International Conference on Mechanical, Industrial and Materials Engineering (ICMIME 2019), Rajshahi, Bangladesh, Dec. 2019.
+
+\bibitem{ref3} R. G. Sargent, “Verification and validation of simulation models,” in Proc. 2010 Winter Simulation Conference (WSC), 2010, pp. 166–183, doi: \href{https://doi.org/10.1109/WSC.2010.5679166}{10.1109/WSC.2010.5679166}.
+
+\bibitem{ref4} S. E. Kimes and G. M. Thompson, “Restaurant revenue management at Chevys: Determining the best table mix,” Decision Sciences, vol. 35, no. 3, pp. 371–392, 2004, doi: \href{https://doi.org/10.1111/j.0011-7315.2004.02531.x}{10.1111/j.0011-7315.2004.02531.x}.
+
+\bibitem{ref5} S. E. Kimes, “Restaurant revenue management: Implementation at Chevys Arrowhead,” Cornell Hotel and Restaurant Administration Quarterly, vol. 45, no. 1, pp. 52–67, 2004, doi: \href{https://doi.org/10.1177/0010880403260107}{10.1177/0010880403260107}.
+
+\bibitem{ref6} T. Shimmura, N. Fujii, and T. Kaihara, “Staff motion reduction at a Japanese restaurant by kitchen layout redesign after kitchen simulation,” Procedia CIRP, vol. 62, pp. 106–110, 2017, doi: \href{https://doi.org/10.1016/j.procir.2016.07.007}{10.1016/j.procir.2016.07.007}.
+
+\bibitem{ref7} A. O. N. René, T. Tanizaki, T. Shimmura, N. Fujii, and T. Takenaka, “Multi-agent simulation-based analysis for restaurant service,” Procedia CIRP, vol. 79, pp. 673–678, 2019, doi: \href{https://doi.org/10.1016/j.procir.2019.02.044}{10.1016/j.procir.2019.02.044}.
+
+\bibitem{ref8} D. Buzali, S. Elizondo, S. Muñiz, and O. Sánchez, “Simulation-optimization of a coffee shop in business district: A case study of Starbucks in Mexico City,” in Proc. 5th South American Conference on Industrial Engineering and Operations Management, Bogotá, Colombia, May 2024, pp. 193–204, doi: \href{https://doi.org/10.46254/SA05.20240042}{10.46254/SA05.20240042}.
+
+\bibitem{ref9} M. A. Samad, J. Abdullah, M. A. Karim, and K. Islam, “Optimizing restaurant queue management: A simulation-based approach using Arena software,” Asian Journal of Engineering and Applied Technology, vol. 13, no. 1, pp. 20–29, 2024, doi: \href{https://doi.org/10.70112/ajeat-2024.13.1.4234}{10.70112/ajeat-2024.13.1.4234}.
+
+\bibitem{ref10} E. Herrera-Barbas, N. Gallego-Cova, J. Torregrosa-Diaz, J. Vidal-Sanguino, and A. Troncoso-Palacio, “Análisis de la eficiencia operativa en la atención al cliente de comida rápida mediante simulación,” BILO, vol. 8, no. 1, pp. 68–75, 2026, doi: \href{https://doi.org/10.17981/bilo.8.1.2026.08}{10.17981/bilo.8.1.2026.08}.
+
+\end{thebibliography}
+\section{DECLARACIÓN DE IA}
+
+Se utilizó una herramienta de inteligencia artificial como apoyo para la organización del texto, la integración de secciones y el análisis de archivos experimentales. Las cifras se contrastaron con los CSV y sus registros JSON; la herramienta no sustituyó la simulación ni la validación empírica. La revisión y responsabilidad del contenido corresponden a los autores.
+
+\end{document}

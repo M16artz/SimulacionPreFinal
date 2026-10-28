@@ -6,7 +6,7 @@ test('configurar, simular y reproducir los mismos resultados de la API',async({p
   await page.getByRole('button',{name:'Ejecutar simulación',exact:true}).click();
   const trabajo=await (await respuesta).json();
   await expect(page.locator('.aviso.exito')).toContainText('Simulación completada',{timeout:60000});
-  const resultado=await (await request.get(`http://127.0.0.1:8000/api/v1/simulaciones/${trabajo.id}/resultados`)).json();
+  const resultado=await (await request.get(`/api/v1/simulaciones/${trabajo.id}/resultados`)).json();
   await expect(page.locator('.indicador').first()).toContainText(String(resultado.metricas.personas_atendidas));
   await page.getByRole('button',{name:'Restaurante en vivo',exact:true}).click();
   await expect(page.locator('.mesa')).toHaveCount(resultado.configuracion.mesas);
@@ -18,6 +18,8 @@ test('configurar, simular y reproducir los mismos resultados de la API',async({p
   await expect(page.locator('.mesa.ocupada')).toHaveCount(0);
   await page.getByRole('button',{name:'Resultados',exact:true}).click();
   await expect(page.getByText('Resultados que puedes reproducir')).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Colas y ley de Little'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'CSV de colas'})).toHaveAttribute('href',`/api/v1/simulaciones/${trabajo.id}/exportar?formato=csv&tabla=colas`);
   await expect(page.getByRole('link',{name:'JSON completo'})).toHaveAttribute('href',`/api/v1/simulaciones/${trabajo.id}/exportar?formato=json`);
   await page.reload();
   await expect(page.locator('.indicador').first()).toContainText(String(resultado.metricas.personas_atendidas));
@@ -48,7 +50,7 @@ test('duplicar, guardar, restaurar y rechazar probabilidades inválidas',async({
 });
 
 test('importar pendientes conserva null y bloquea su ejecución',async({page,request})=>{
-  const lista=await (await request.get('http://127.0.0.1:8000/api/v1/configuraciones')).json();
+  const lista=await (await request.get('/api/v1/configuraciones')).json();
   const configuracion=structuredClone(lista.find((g:{configuracion:{sintetica:boolean}})=>g.configuracion.sintetica).configuracion);
   configuracion.nombre='Referencia importada con pedido pendiente';
   configuracion.tiempos.pedido=null;
