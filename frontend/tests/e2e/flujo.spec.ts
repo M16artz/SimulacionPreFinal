@@ -8,6 +8,10 @@ test('configurar, simular y reproducir los mismos resultados de la API',async({p
   await expect(page.locator('.aviso.exito')).toContainText('Simulación completada',{timeout:60000});
   const resultado=await (await request.get(`/api/v1/simulaciones/${trabajo.id}/resultados`)).json();
   await expect(page.locator('.indicador').first()).toContainText(String(resultado.metricas.personas_atendidas));
+  const tarjetas=await page.locator('.indicador').evaluateAll(elementos=>elementos.map(e=>({alto:e.getBoundingClientRect().height,y:e.getBoundingClientRect().y})));
+  expect(new Set(tarjetas.map(t=>t.alto)).size).toBe(1);
+  expect(new Set(tarjetas.map(t=>t.y)).size).toBe(1);
+  await page.screenshot({path:test.info().outputPath('vista-general.png'),fullPage:true});
   await page.getByRole('button',{name:'Restaurante en vivo',exact:true}).click();
   await expect(page.locator('.mesa')).toHaveCount(resultado.configuracion.mesas);
   const deslizador=page.getByRole('slider',{name:'Posición de reproducción'});
@@ -18,15 +22,18 @@ test('configurar, simular y reproducir los mismos resultados de la API',async({p
   await expect(page.locator('.mesa.ocupada')).toHaveCount(0);
   await page.getByRole('button',{name:'Resultados',exact:true}).click();
   await expect(page.getByText('Resultados que puedes reproducir')).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Colas y ley de Little'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Espera y flujo del servicio'})).toBeVisible();
   await expect(page.getByRole('link',{name:'CSV de colas'})).toHaveAttribute('href',`/api/v1/simulaciones/${trabajo.id}/exportar?formato=csv&tabla=colas`);
   await expect(page.getByRole('link',{name:'JSON completo'})).toHaveAttribute('href',`/api/v1/simulaciones/${trabajo.id}/exportar?formato=json`);
+  await page.screenshot({path:test.info().outputPath('resultados.png'),fullPage:true});
   await page.reload();
   await expect(page.locator('.indicador').first()).toContainText(String(resultado.metricas.personas_atendidas));
   await page.setViewportSize({width:390,height:844});
   await page.getByRole('button',{name:'Abrir navegación'}).click();
   await page.getByRole('button',{name:'Resultados',exact:true}).click();
   await expect(page.getByText('Resultados que puedes reproducir')).toBeVisible();
+  await expect(page.locator('body')).toHaveJSProperty('scrollWidth',390);
+  await page.screenshot({path:test.info().outputPath('resultados-movil.png'),fullPage:true});
 });
 
 test('duplicar, guardar, restaurar y rechazar probabilidades inválidas',async({page})=>{
@@ -64,20 +71,31 @@ test('importar pendientes conserva null y bloquea su ejecución',async({page,req
   await expect(page.getByRole('alert')).toContainText('Faltan tiempos por aprobar');
 });
 
-test('comparar rangos con réplicas y consultar diferencias y sensibilidad',async({page})=>{
+test('comparar rangos con réplicas, paginar y localizar escenarios desde el gráfico',async({page})=>{
   await page.goto('/');
   await expect(page.getByRole('button',{name:'Ejecutar simulación',exact:true})).toBeEnabled();
   await page.getByRole('button',{name:'Experimentos',exact:true}).click();
   await page.getByLabel('Réplicas por escenario').fill('2');
   await page.getByLabel('Evaluar combinaciones en rangos').check();
-  for(const [recurso,minimo,maximo] of [['mesas','11','11'],['meseros','1','2'],['cocineras','3','3']]){
+  for(const [recurso,minimo,maximo] of [['mesas','9','13'],['meseros','1','2'],['cocineras','3','3']]){
     await page.getByLabel(`${recurso} minimo`,{exact:true}).fill(minimo);
     await page.getByLabel(`${recurso} maximo`,{exact:true}).fill(maximo);
     await page.getByLabel(`${recurso} paso`,{exact:true}).fill('1');
   }
   await page.getByRole('button',{name:'Ejecutar experimento',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'2 escenarios · 2 réplicas'})).toBeVisible({timeout:60000});
+  await expect(page.getByRole('heading',{name:'10 escenarios · 2 réplicas'})).toBeVisible({timeout:60000});
   await expect(page.getByRole('heading',{name:'Cambio frente al primer escenario'})).toBeVisible();
-  await expect(page.getByRole('heading',{name:'Qué cambia al añadir una unidad'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Qué cambia al añadir una unidad'})).toHaveCount(0);
+  await page.getByRole('button',{name:/Ver escenario #9:/}).click();
+  await expect(page.locator('tr[data-escenario="9"]')).toHaveClass('fila-seleccionada');
+  await page.screenshot({path:test.info().outputPath('experimentos.png'),fullPage:true});
+  await expect(page.locator('.resultados-experimentales tbody tr')).toHaveCount(2);
+  await page.getByRole('button',{name:'Página siguiente de cambios frente al primer escenario'}).click();
+  await expect(page.getByRole('cell',{name:'#9 frente a #0',exact:true})).toBeVisible();
+  await page.setViewportSize({width:390,height:844});
+  await expect(page.locator('body')).toHaveJSProperty('scrollWidth',390);
+  await page.getByRole('combobox',{name:'Localizar escenario en la tabla'}).selectOption('0');
+  await expect(page.locator('tr[data-escenario="0"]')).toHaveClass('fila-seleccionada');
+  await page.screenshot({path:test.info().outputPath('experimentos-movil.png'),fullPage:true});
   await expect(page.getByRole('heading',{name:'Semillas y entorno registrados'})).toBeVisible();
 });
