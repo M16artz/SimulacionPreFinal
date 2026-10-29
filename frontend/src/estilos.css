@@ -6,6 +6,7 @@
   --color-navegacion:#2A2F45;
   --color-acento:#F4B459;
   --color-fondo:#D4DBE1;
+  --color-petroleo-suave:#DCE7EC;
   --color-verde-pastel:#D9EFD9;
   --color-azul-pastel:#E3EEFC;
   --color-melocoton:#FDE9DF;
@@ -1052,8 +1053,8 @@ td input {
   margin:-18px -18px 18px;
   padding:14px 18px;
   border-radius:13px 13px 0 0;
-  background:var(--seccion-fondo);
-  color:var(--color-superficie)
+  background:var(--color-petroleo-suave);
+  color:var(--color-navegacion)
 }
 .editor-seccion .parametros label {
   font-size:12px
